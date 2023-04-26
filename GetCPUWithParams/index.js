@@ -69,8 +69,7 @@ module.exports = async function (context, req) {
             // check ADF is runnig
             if (item.host_name == "dw_admin") {
                 if (item.status == "running") {
-                    ADF = true;
-                    result.push({ item, ADF })
+                    result.push({ item, ADF:true })
                 }
                 console.log("ADF running")
 
