@@ -64,28 +64,32 @@ module.exports = async function (context, req) {
         res = await getSqlCpuUsage(server, DB);
         // console.log(res.recordset)
         let data = res.recordset;
-        result = {}
+        result = []
         data.map((item) => {
             // check ADF is runnig
             if (item.host_name == "dw_admin") {
+                if (item.status == "running") {
+                    ADF = true;
+                    result.push({ item, ADF })
+                }
                 console.log("ADF running")
-                ADF = true;
-                result = { ...result, item, ADF }
 
             }
             // check QV is runnig
             else if (item.host_name == "pd1mdwk000Q3P") {
-                console.log("pd1mdwk000Q3P")
-                QV = true
-                result = { ...result, item, QV }
+                // console.log("pd1mdwk000Q3P")
+                if (item.status == "running") {
+                    QV = true;
+                    result.push({ item, QV })
+                }
             }
             // check PBI is runnig
-            else if (item.host_name == "aw0ldwk000016") {
-                console.log("aw0ldwk00001B")
-                PBI = true;
-                result = { ...result, item, PBI }
-
-
+            // "program_name": "Mashup Engine (PowerBIPremium-Import)",
+            else if (item.program_name == "Mashup Engine (PowerBIPremium-Import)") {
+                if (item.status == "running") {
+                    PBI = true
+                    result.push({ item, PBI })
+                }
             }
         })
     }
@@ -93,5 +97,6 @@ module.exports = async function (context, req) {
     context.res = {
         // status: 200, /* Defaults to 200 */
         body: { result }
+        // body: { res }
     };
 }
