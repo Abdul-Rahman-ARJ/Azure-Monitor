@@ -76,19 +76,17 @@ module.exports = async function (context, req) {
 
             }
             // check QV is runnig
-            else if (item.host_name == "pd1mdwk000Q3P") {
+            else if (item.host_name.startsWith("QV")) {
                 // console.log("pd1mdwk000Q3P")
                 if (item.status == "running") {
-                    QV = true;
-                    result.push({ item, QV })
+                    result.push({ item, QV:true })
                 }
             }
             // check PBI is runnig
             // "program_name": "Mashup Engine (PowerBIPremium-Import)",
             else if (item.program_name == "Mashup Engine (PowerBIPremium-Import)") {
                 if (item.status == "running") {
-                    PBI = true
-                    result.push({ item, PBI })
+                    result.push({ item, PBI:true })
                 }
             }
         })
