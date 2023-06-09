@@ -1,124 +1,105 @@
-// importing sql module
-const sql = require("mssql");
+const sql = require('mssql');
+const server1 = [
+    "",
+    "elastic-sqlserver001.database.windows.net",
+    "elastic-sqlserver002.database.windows.net",
+    "elastic-sqlserver004.database.windows.net",
+    "elastic-sqlserver005.database.windows.net",
+    "elastic-sqlserver006.database.windows.net",
+    "elastic-sqlserver007.database.windows.net",
+    "elastic-sqlserver008.database.windows.net",
+    "elastic-sqlserver009.database.windows.net",
+    "elastic-sqlserver010.database.windows.net",
+    "elastic-sqlserver012.database.windows.net",
+    "sql45prdserverless.database.windows.net",
+    "elastic-sqlserver013.database.windows.net"
+]
+
 module.exports = async function (context, req) {
-    let { method } = req;
-    ADFisRunning = false;
-    QVisRunning = false;
-    PBIisRunnning = false;
-    const { server, DB } = req.body;
-    context.log({
-        server,
-        DB
-    });
-    if (method == "POST") {
-        Output1 = await getSqlCpuUsage(server, DB);
-        context.log(Output1);
-        let data = Output1.recordsets;
-        result = [];
-        context.log(`There are ${data.length} fetched. ${DB}`);
-        data.map((item) => {
-            // check ADFisRunning is runnig
-            if (item.login_name.startsWith("DW")) {
-                if (item.status == "running") {
-                    ADFisRunning = true;
-                    result.push({
-                        item,
-                        ADFisRunning: ADFisRunning,
-                    });
-                }
-                console.log("ADFisRunning running");
-            }
-            // check QVisRunning is runnig
-            else if (item.host_name.startsWith("QV")) {
-                // console.log("pd1mdwk000Q3P")
-                if (item.status == "running") {
-                    QVisRunning = true;
-                    result.push({
-                        item,
-                        QVisRunning: QVisRunning,
-                    });
-                }
-            }
-            // check PBIisRunnning is runnig
-            // "program_name": "Mashup Engine (PowerBIPremium-Import)",
-            else if (item.program_name == "Mashup Engine (PowerBIPremium-Import)") {
-                if (item.status == "running") {
-                    PBIisRunnning = true;
-                    result.push({
-                        item,
-                        PBIisRunnning: PBIisRunnning,
-                    });
-                }
-            }
-        });
-    }
-    context.log("All processed", DB);
-    context.res = {
-        // status: 200, /* Defaults to 200 */
-        body: {
-            ADFisRunning,
-            QVisRunning,
-            PBIisRunnning,
-            result,
-            "Overall stats": Output1.recordset,
-        },
-        // body: { res }
-    };
-    context.done();
-    async function getSqlCpuUsage(server, DB) {
+
+    if (req.method == 'POST') {
+        var { server } = req.body
         const config = {
-            server:server ,
-            database: DB,
+            server: server,
+            database: 'master',
             user: server == 'elastic-sqlserver001.database.windows.net' || server == 'elastic-sqlserver002.database.windows.net' || server == 'elastic-sqlserver004.database.windows.net' ? 'atrainuser' : 'aprduser',
-            password: "rt53#$%@fgt5$3",
+            password: 'rt53#$%@fgt5$3',
             options: {
-                encrypt: true, // if using Azure
-            },
+                encrypt: true // if using Azure
+            }
         };
-        try {
-            await sql.connect(config);
-            const result = await sql.query(`
-            DECLARE @dbname SYSNAME = NULL
-            SELECT
-                    sdes.session_id        ,sdes.login_time        ,sdes.last_request_start_time       ,sdes.last_request_end_time       ,sdes.is_user_process       ,sdes.host_name       ,sdes.program_name       ,sdes.login_name       ,sdes.status
-                   ,sdec.num_reads       ,sdec.num_writes       ,sdec.last_read       ,sdec.last_write       ,sdes.reads       ,sdes.logical_reads       ,sdes.writes              ,DatabaseName = COALESCE( db_name(sdes.database_id),  N'')
-                   ,sdest.ObjName    ,sdes.client_interface_name    ,sdes.nt_domain    ,sdes.nt_user_name    ,sdec.client_net_address    ,sdec.local_net_address    ,sdest.Query    ,KillCommand  = 'Kill '+ CAST(sdes.session_id  AS VARCHAR)
-            from sys.dm_tran_locks t INNER JOIN sys.dm_exec_sessions sdes
-                    ON t.request_session_id = sdes.session_id
-            LEFT OUTER JOIN sys.dm_exec_connections AS sdec
-                    ON sdec.session_id = sdes.session_id
-            OUTER APPLY (
 
-                                SELECT DB_NAME(dbid) AS DatabaseName
-                                ,OBJECT_NAME(objectid) AS ObjName
-            ,COALESCE((
-                SELECT TEXT AS [processing-instruction(definition)
-            ]
-            FROM sys.dm_exec_sql_text(sdec.most_recent_sql_handle)
-            FOR XML PATH('')
-            ,TYPE
-            ), '') AS Query
-
-            FROM sys.dm_exec_sql_text(sdec.most_recent_sql_handle)
-
-            ) sdest
-            where t.resource_type = 'database'
-            and t.resource_database_id = CASE WHEN @dbname IS NULL
-            THEN t.resource_database_id
-            ELSE DB_ID(@dbname)
-            END
-            and t.request_type = 'LOCK'
-            and t.request_status = 'GRANT'
-            `);
-            sql.close();
-            return result;
-        } catch (err) {
-            context.log(`Error while executing the sql: ${err}, ${DB}`);
+        async function getSqlCpuUsage() {
             try {
+                try {
+                    await sql.connect(config);
+
+                } catch (error) {
+                    res.status(200).json({ "message": error })
+
+                }
+                const result = await sql.query(`SELECT name FROM sys.databases`);
                 sql.close();
-            } catch (err2) {
-                context.log(`Error at closing the connection: ${err2}, ${DB}`);
+                console.log(result);
+                return FilterDB(result.recordset);
+            } catch (err) {
+                try {
+                    sql.close();
+                } catch (error) {
+
+                    context.error(err);
+                    // res.status(200).json({ "message": err })
+                }
+                context.error(err);
+                // res.status(200).json({ "message": err })
             }
         }
+
+        function FilterDB(result) {
+
+            const regex = /\b(eton_rei\w+(?:tst|prd|RC2|QAsprint2|devsprint2|qaprod|data))\b/gi;
+
+            const matchedWords = [""];
+
+            for (const str of result) {
+                const matches = str.name.match(regex);
+                if (matches) {
+                    matchedWords.push(...matches);
+                }
+            }
+            return matchedWords
+        }
+        try {
+            const data = await getSqlCpuUsage();
+            context.res = {
+                status: 200, /* Defaults to 200 */
+                body: { "data": data }
+            };
+            // context.done();
+            // res.status(200).json({ "data": data })
+        } catch (error) {
+            context.res = {
+                status: 200, /* Defaults to 200 */
+                body: { "message": error }
+            };
+            // context.done();
+            // res.status(200).json({ "message": error })
+        }
     }
-};
+    else if (req.method == 'GET') {
+        context.res = {
+            status: 200, /* Defaults to 200 */
+            body: { "server": server1 }
+        };
+        context.done();
+        // res.status(200).json({"server":server1})
+    }
+    else {
+        context.res = {
+            status: 401,
+            body: { "res": "Method not allowed" }
+        };
+        context.done();
+        // res.status(401).json({ "res": "Method not allowed" })
+    }
+}
