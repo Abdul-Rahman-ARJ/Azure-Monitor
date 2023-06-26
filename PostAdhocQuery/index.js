@@ -3,7 +3,8 @@ const sql = require('mssql');
 module.exports = async function (context, req) {
     context.log('Post Adhoc Query function');
     if (req.method == 'POST') {
-        var { server, db, query } = req.body
+        let result;
+        var { server, db, AdhocQuery } = req.body
         const config = {
             server: server,
             database: db,
@@ -13,11 +14,42 @@ module.exports = async function (context, req) {
                 encrypt: true // if using Azure
             }
         };
-        await sql.connect(config);
+
+
+
+        try {
+            await sql.connect(config);
+        } catch (error) {
+            context.log("error connecting db", error)
+        }
+        context.log({ server, db, AdhocQuery })
+        try {
+            result = await sql.query(AdhocQuery);
+        } catch (error) {
+
+            context.log(`error running quey ${AdhocQuery}`, error);
+
+            try {
+                sql.close();
+            } catch (error) {
+                context.log(`error closing connection`, error)
+            }
+        }
+        try {
+            sql.close();
+        } catch (error) {
+            context.log(`error closing connection`, error)
+        }
         context.res = {
-            body: query
+            body: result
+        };
+    }
+    else {
+        context.res = {
+            status: 401,
+            body: "Not allowed"
         };
     }
 
-    
+
 }
