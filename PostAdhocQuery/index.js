@@ -25,9 +25,21 @@ module.exports = async function (context, req) {
         context.log({ server, db, AdhocQuery })
         try {
             result = await sql.query(AdhocQuery);
+            try {
+                sql.close();
+            } catch (error) {
+                context.log(`error closing connection`, error)
+            }
+            context.res = {
+                body: result
+            };
         } catch (error) {
 
             context.log(`error running quey ${AdhocQuery}`, error);
+            context.res = {
+                status: 400,
+                body: `Error in query${AdhocQuery}`
+            }
 
             try {
                 sql.close();
@@ -35,14 +47,7 @@ module.exports = async function (context, req) {
                 context.log(`error closing connection`, error)
             }
         }
-        try {
-            sql.close();
-        } catch (error) {
-            context.log(`error closing connection`, error)
-        }
-        context.res = {
-            body: result
-        };
+        
     }
     else {
         context.res = {
