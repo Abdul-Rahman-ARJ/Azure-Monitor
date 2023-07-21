@@ -1,18 +1,7 @@
 const sql = require('mssql');
 const server1 = [
     "",
-    "elastic-sqlserver001.database.windows.net",
     "elastic-sqlserver002.database.windows.net",
-    "elastic-sqlserver004.database.windows.net",
-    "elastic-sqlserver005.database.windows.net",
-    "elastic-sqlserver006.database.windows.net",
-    "elastic-sqlserver007.database.windows.net",
-    "elastic-sqlserver008.database.windows.net",
-    "elastic-sqlserver009.database.windows.net",
-    "elastic-sqlserver010.database.windows.net",
-    "elastic-sqlserver012.database.windows.net",
-    "sql45prdserverless.database.windows.net",
-    "elastic-sqlserver013.database.windows.net"
 ]
 
 module.exports = async function (context, req) {
