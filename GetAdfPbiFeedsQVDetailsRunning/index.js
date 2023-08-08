@@ -1,108 +1,109 @@
 // importing sql module
 const sql = require("mssql");
 
-
 module.exports = async function (context, req) {
-
-    let { method } = req;
-    var ADFisRunning = false;
-    var QVisRunning = false;
-    var PBIisRunnning = false;
-    var FeedsisRunnning = false;
-    const { server, DB } = req.body;
-    context.log({
-        server,
-        DB
-    });
-    let result = [];
-    let Output1;
-    let data;
-    if (method == "POST") {
-        Output1 = await getSqlCpuUsage(server, DB);
-        // context.log(Output1);
-        data = Output1.recordset;
-        // context.log(data)
-        context.log(`There are ${data.length} fetched. ${DB}`);
-        data.map((item) => {
-            // check ADFisRunning is runnig
-            if (item.login_name == 'DW_Admin') {
-                if (item.status == "running") {
-                    ADFisRunning = true;
-                    result.push({
-                        item,
-                        ADFisRunning: ADFisRunning,
-                    });
-                }
-                context.log("ADFisRunning running");
-            }
-            // check QVisRunning is runnig
-            else if (item.program_name == "QlikView") {
-                // context.log("pd1mdwk000Q3P")
-                if (item.status == "running") {
-                    QVisRunning = true;
-                    result.push({
-                        item,
-                        QVisRunning: QVisRunning,
-                    });
-                }
-            }
-            // check PBIisRunnning is runnig
-            // "program_name": "Mashup Engine (PowerBIPremium-Import)",
-            else if (item.program_name == "Mashup Engine (PowerBIPremium-Import)") {
-                if (item.status == "running") {
-                    PBIisRunnning = true;
-                    result.push({
-                        item,
-                        PBIisRunnning: PBIisRunnning,
-                    });
-                }
-            }
-            else if (item.login_name == "ruleengine") {
-                if (item.status == "running") {
-                    FeedsisRunnning = true;
-                    result.push({
-                        item,
-                        FeedsisRunnning: FeedsisRunnning,
-                    });
-                }
-            }
-        });
-    }
-    context.log("All processed", DB);
-    // res.status(200).json("ok")
-    context.res =
-    {
-
-        body: {
-            ADFisRunning,
-            QVisRunning,
-            PBIisRunnning,
-            FeedsisRunnning,
-            result,
-            Running_Queries: Output1.recordset.filter(session => session.status === "running"),
-            OverallStats: Output1.recordset
+  let { method } = req;
+  var ADFisRunning = false;
+  var QVisRunning = false;
+  var PBIisRunnning = false;
+  var FeedsisRunnning = false;
+  const { server, DB } = req.body;
+  context.log({
+    server,
+    DB,
+  });
+  let result = [];
+  let Output1;
+  let data;
+  if (method == "POST") {
+    Output1 = await getSqlCpuUsage(server, DB);
+    // context.log(Output1);
+    data = Output1.recordset;
+    // context.log(data)
+    context.log(`There are ${data.length} fetched. ${DB}`);
+    data.map((item) => {
+      // check ADFisRunning is runnig
+      if (item.login_name == "DW_Admin") {
+        if (item.status == "running") {
+          ADFisRunning = true;
+          result.push({
+            item,
+            ADFisRunning: ADFisRunning,
+          });
         }
-    }
-    async function getSqlCpuUsage(server, DB) {
-        const config = {
-            server: server,
-            database: DB,
-            user: server == 'elastic-sqlserver001.database.windows.net' || server == 'elastic-sqlserver002.database.windows.net' || server == 'elastic-sqlserver004.database.windows.net' ? 'atrainuser' : 'aprduser',
-            password: "rt53#$%@fgt5$3",
-            options: {
-                encrypt: true, // if using Azure
-            },
-        };
-        try {
-            try {
+        context.log("ADFisRunning running");
+      }
+      // check QVisRunning is runnig
+      else if (item.program_name == "QlikView") {
+        // context.log("pd1mdwk000Q3P")
+        if (item.status == "running") {
+          QVisRunning = true;
+          result.push({
+            item,
+            QVisRunning: QVisRunning,
+          });
+        }
+      }
+      // check PBIisRunnning is runnig
+      // "program_name": "Mashup Engine (PowerBIPremium-Import)",
+      else if (item.program_name == "Mashup Engine (PowerBIPremium-Import)") {
+        if (item.status == "running") {
+          PBIisRunnning = true;
+          result.push({
+            item,
+            PBIisRunnning: PBIisRunnning,
+          });
+        }
+      } else if (item.login_name == "ruleengine") {
+        if (item.status == "running") {
+          FeedsisRunnning = true;
+          result.push({
+            item,
+            FeedsisRunnning: FeedsisRunnning,
+          });
+        }
+      }
+    });
+  }
+  context.log("All processed", DB);
+  // res.status(200).json("ok")
+  context.res = {
+    body: {
+      ADFisRunning,
+      QVisRunning,
+      PBIisRunnning,
+      FeedsisRunnning,
+      result,
+      Running_Queries: Output1.recordset.filter(
+        (session) => session.status === "running"
+      ),
+      OverallStats: Output1.recordset,
+    },
+  };
+  async function getSqlCpuUsage(server, DB) {
+    const config = {
+      server: server,
+      database: DB,
+      user:
+        server == "elastic-sqlserver001.database.windows.net" ||
+        server == "elastic-sqlserver002.database.windows.net" ||
+        server == "elastic-sqlserver004.database.windows.net"
+          ? "atrainuser"
+          : "aprduser",
+      password: "rt53#$%@fgt5$3",
+      options: {
+        encrypt: true, // if using Azure
+      },
+    };
+    try {
+      try {
+        await sql.connect(config);
+      } catch (error) {
+        context.log("unable to connect", error);
+        return;
+      }
 
-                await sql.connect(config);
-            } catch (error) {
-                context.log('unable to connect', error)
-                return
-            }
-
-            const result = await sql.query(`
+      const result = await sql.query(`
                 DECLARE @dbname SYSNAME =NULL
                 SELECT 
                         sdes.session_id        ,sdes.login_time        ,sdes.last_request_start_time       ,
@@ -140,15 +141,15 @@ module.exports = async function (context, req) {
                   and t.request_type = 'LOCK' 
                   and t.request_status = 'GRANT'
             `);
-            sql.close();
-            return result;
-        } catch (err) {
-            context.log(`Error while executing the sql: ${err}, ${DB}`);
-            try {
-                sql.close();
-            } catch (err2) {
-                context.log(`Error at closing the connection: ${err2}, ${DB}`);
-            }
-        }
+      sql.close();
+      return result;
+    } catch (err) {
+      context.log(`Error while executing the sql: ${err}, ${DB}`);
+      try {
+        sql.close();
+      } catch (err2) {
+        context.log(`Error at closing the connection: ${err2}, ${DB}`);
+      }
     }
-}
+  }
+};
