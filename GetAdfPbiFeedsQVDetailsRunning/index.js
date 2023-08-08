@@ -8,6 +8,7 @@ module.exports = async function (context, req) {
     var ADFisRunning = false;
     var QVisRunning = false;
     var PBIisRunnning = false;
+    var FeedsisRunnning = false;
     const { server, DB } = req.body;
     context.log({
         server,
@@ -56,6 +57,15 @@ module.exports = async function (context, req) {
                     });
                 }
             }
+            else if (item.login_name == "ruleengine") {
+                if (item.status == "running") {
+                    FeedsisRunnning = true;
+                    result.push({
+                        item,
+                        FeedsisRunnning: FeedsisRunnning,
+                    });
+                }
+            }
         });
     }
     context.log("All processed", DB);
@@ -67,7 +77,9 @@ module.exports = async function (context, req) {
             ADFisRunning,
             QVisRunning,
             PBIisRunnning,
+            FeedsisRunnning,
             result,
+            Running_Queries: Output1.recordset.filter(session => session.status === "running"),
             OverallStats: Output1.recordset
         }
     }
