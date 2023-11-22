@@ -9,6 +9,7 @@
   "dependencies": {
     "@azure/identity": "^3.2.3",
     "@azure/keyvault-secrets": "^4.7.0",
+    "axios": "^1.6.2",
     "mssql": "^9.1.1"
   }
 }
