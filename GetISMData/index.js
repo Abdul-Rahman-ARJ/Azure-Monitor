@@ -8,6 +8,7 @@ module.exports = async function (context, req) {
         const response1 = await axios.get('https://api.polygon.io/v3/reference/dividends?apiKey=NfY6pfSisYjzlNVlhrc6pvpjvqaBwIkh');
         const response2 = await axios.get(`https://api.polygon.io/v3/reference/tickers/${cusip}?apiKey=NfY6pfSisYjzlNVlhrc6pvpjvqaBwIkh`);
 
+        await axios.post()
         const data1 = response1.data;
         const data2 = response2.data;
 
