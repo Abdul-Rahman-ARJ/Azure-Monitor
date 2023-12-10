@@ -22,21 +22,21 @@ module.exports = async function (context, req) {
         }
         return flattened;
     }
-    async function GetOpenFigiResponse(cusip){
+    async function GetOpenFigiResponse(cusip) {
         const OpenfigiUrl = "https://api.openfigi.com/v3/mapping";
-            const headers = {
-                'X-OPENFIGI-APIKEY': OpenfigiApikey //'bbb06f63-277e-4808-9d33-e0c4f9557b46' //Openfigi Api Key
+        const headers = {
+            'X-OPENFIGI-APIKEY': OpenfigiApikey //'bbb06f63-277e-4808-9d33-e0c4f9557b46' //Openfigi Api Key
+        }
+        const data = [
+            {
+                "idType": "ID_CUSIP",
+                "idValue": cusip //'037833100'
             }
-            const data = [
-                {
-                    "idType": "ID_CUSIP",
-                    "idValue": cusip //'037833100'
-                }
-            ]
-            const requestOptions = { headers: headers };
-            const OpenfigiResponse = await axios.post(OpenfigiUrl, data, requestOptions)
-            context.log({ OpenfigiResponse: OpenfigiResponse.data })
-            return OpenfigiResponse.data;
+        ]
+        const requestOptions = { headers: headers };
+        const OpenfigiResponse = await axios.post(OpenfigiUrl, data, requestOptions)
+        context.log({ OpenfigiResponse: OpenfigiResponse.data })
+        return OpenfigiResponse.data;
     }
 
     async function getTicker(cusip) {
@@ -69,6 +69,11 @@ module.exports = async function (context, req) {
         context.log({ responseCusipDetails: responseCusipDetails.data })
         return responseCusipDetails.data.results;
     }
+    async function GetCusipMaretSector(cusip) {
+        const res = GetOpenFigiResponse(cusip);
+        context.log({ res })
+        return res;
+    }
 
     async function getForexDetails(Forexticker) {
         const Url = `https://api.polygon.io/v2/aggs/ticker/C:${Forexticker}/prev?adjusted=true&apiKey=${polygonApiKey}`;
@@ -79,14 +84,17 @@ module.exports = async function (context, req) {
 
     // entry of the API
     if (req.method == 'POST') {
-        var { cusip, Forexticker } = req.body;
-        if (cusip) {
+        const { cusip, Forexticker } = req.body;
+        const OpenfigiResponse = await GetOpenFigiResponse(cusip);
+        const getType = OpenfigiResponse[0]?.data[0]?.marketSector;
+        context.log({ getType })
+        if (cusip && getType == 'Equity') {
             try {
                 const ticker = await getTicker(cusip);
                 const marketValue = await getMarketValue(ticker);
                 const CusipDetails = await getCusipDetails(ticker);
                 context.log({ marketValue, CusipDetails })
-                const result = flattenObject({ marketValue, ...CusipDetails });
+                const result = flattenObject({ marketValue, ...CusipDetails, OpenfigiResponse: OpenfigiResponse[0]?.data[0] });
 
                 context.res = {
                     // status: 200, /* Defaults to 200 */
@@ -98,6 +106,11 @@ module.exports = async function (context, req) {
                     body: { res: null }
                 };
             }
+        } else {
+            context.res = {
+                // status: 200, /* Defaults to 200 */
+                body: { result: OpenfigiResponse[0]?.data[0] }
+            };
         }
         if (Forexticker) {
             try {
