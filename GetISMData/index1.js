@@ -109,18 +109,43 @@ module.exports = async function (context, req) {
         return updatedData;
     }
 
+    function getLastNthDay(n) {
+        const today = new Date();
+        const lastDate = new Date(today);
+        lastDate.setDate(today.getDate() - n + 1);
 
+        return lastDate.toISOString().split('T')[0];
+    }
 
-    async function getForexDetails(Forexticker) {
+    async function getForexDetails(Forexticker, days, startdate, enddate) {
         // const Url = `https://api.polygon.io/v2/aggs/ticker/C:${Forexticker}/prev?adjusted=true&apiKey=${polygonApiKey}`;
         const today = new Date().toISOString().slice(0, 10);
         const previous7thWorkingDay = getPrevious7thWorkingDay(today);
-        context.log({ today: today, previous7thWorkingDay })
-        const Url = `https://api.polygon.io/v2/aggs/ticker/C:${Forexticker}/range/1/day/${previous7thWorkingDay}/${today}?adjusted=true&sort=asc&limit=120&apiKey=${polygonApiKey}`;
-        const responseForexDetails = await axios.get(Url);
-        const updatedjson = convertData(responseForexDetails.data.results);
-        context.log({updatedjson})
-        return updatedjson;
+        context.log({ days, today: today, previous7thWorkingDay })
+        if (days) {
+            const prevDate = getLastNthDay(days);
+            context.log(prevDate)
+            const Url = `https://api.polygon.io/v2/aggs/ticker/C:${Forexticker}/range/1/day/${prevDate}/${today}?adjusted=true&sort=asc&limit=120&apiKey=${polygonApiKey}`;
+            const responseForexDetails = await axios.get(Url);
+            const updatedjson = convertData(responseForexDetails.data.results);
+            context.log({ prevDate, days, Url, updatedjson })
+            return updatedjson;
+        } else if (startdate && enddate) {
+            context.log({startdate , enddate})
+            const Url = `https://api.polygon.io/v2/aggs/ticker/C:${Forexticker}/range/1/day/${startdate}/${enddate}?adjusted=true&sort=asc&limit=120&apiKey=${polygonApiKey}`;
+            const responseForexDetails = await axios.get(Url);
+            const updatedjson = convertData(responseForexDetails.data.results);
+            context.log({ updatedjson })
+            return updatedjson;
+        }
+         else {
+             const last7thday = getLastNthDay(7);
+            const Url = `https://api.polygon.io/v2/aggs/ticker/C:${Forexticker}/range/1/day/${last7thday}/${today}?adjusted=true&sort=asc&limit=120&apiKey=${polygonApiKey}`;
+            const responseForexDetails = await axios.get(Url);
+            const updatedjson = convertData(responseForexDetails.data.results);
+            context.log({ updatedjson })
+            return updatedjson;
+        }
     }
 
     function formatDate(date) {
@@ -149,14 +174,10 @@ module.exports = async function (context, req) {
         return formatDate(previous7thWorkingDay);
     }
 
-    const today = new Date();
-    const previous7thWorkingDay = getPrevious7thWorkingDay(today);
-    console.log('Previous 7th working day:', previous7thWorkingDay);
-
-
     // entry of the API
     if (req.method == 'POST') {
-        const { cusip, Forexticker } = req.body;
+        const { cusip, Forexticker, days, startdate, enddate } = req.body;
+        context.log({ cusip, Forexticker, days, startdate, enddate })
         if (cusip) {
             const OpenfigiResponse = await GetOpenFigiResponse(cusip);
             const getType = OpenfigiResponse[0]?.data[0]?.marketSector;
@@ -190,7 +211,7 @@ module.exports = async function (context, req) {
         }
         if (Forexticker) {
             try {
-                const ForexDetails = await getForexDetails(Forexticker);
+                const ForexDetails = await getForexDetails(Forexticker, days, startdate, enddate);
                 context.res = {
                     // status: 200, /* Defaults to 200 */
                     body: { ForexDetails }
