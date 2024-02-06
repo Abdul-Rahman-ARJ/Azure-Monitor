@@ -3,9 +3,8 @@ const axios = require('axios');
 module.exports = async function (context, req) {
     context.log('JavaScript HTTP trigger function processed a request.');
 
-
-    const polygonApiKey = 'NfY6pfSisYjzlNVlhrc6pvpjvqaBwIkh';
-    const OpenfigiApikey = 'bbb06f63-277e-4808-9d33-e0c4f9557b46';
+    const polygonApiKey = process.env.POLYGON_API_KEY;
+    const OpenfigiApikey = process.env.OPENFIGI_API_KEY; //'bbb06f63-277e-4808-9d33-e0c4f9557b46';
 
     function flattenObject(obj, parentKey = '') {
         let flattened = {};
@@ -189,24 +188,25 @@ module.exports = async function (context, req) {
     }
     async function GetPropertyDetails(address, city, country, postal) {
         var query = '';
-        if(address){
+        if (address) {
             query = `address:\"${address}\" OR `;
-            if(address && city){
+            if (address && city) {
                 query += `city:${city}  OR `
             }
-            if(address && country){
+            if (address && country) {
                 query += `country:${country}  OR `
             }
-            if(address && postal){
+            if (address && postal) {
                 query += `postalCode:${postal}`
             }
         }
         context.log(query);
 
-        const token = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ6eXI1dGt3MzR0ejh2NnR0bnI0bTY5NnE2MTIweXgzNSIsImlzcyI6ImRhdGFmaW5pdGkuY28ifQ.Z-U0RLY576RrWYRFP0m5TfZYfaf4Pg7qKlD7hG5RhQDz-NYTZmQLOQBBhWkdRKLRGNzFJ85tiOhuS50RO4zdsROIY_f_GrwcrjjSA8iKCopiE2D_jmfmeR7ZgQprDDVEyOwe5ZyEXH7lBEX6oP9X9k5ELTN0UvdL1PtaGb-sfXTWIN9U3yA5peQSernjS8H8S6kYKcizt38ZQVwHdiv28ECUfEUSGYGJE4r3LUMCxcQnMlzV5XSqOGu6vgL_F45lO0wHDL1G-w1Z_z0XJCKnehyRk8IekNo1XJojz5UaJfPuGRIp0si0UjG6739WyCUiuezjbS-FSUc22zMkjVAfANuTX8jZ32r32a_AatiwHc3NjGlEZEtg9qzwa4Lr0D_h0yyyAlykUBnC08aDit6Uw9kZ37zmmb0AQByLkaWAYCLKQXRc6zMVVai7kk9iiIA3yRWiZuOClrRRjwaaFmsPHc0QSPQOwOMmeJp8lCZ67Abse82ez11ouC51F9n9cKbqHvX4Omwv7xm8gW8dQINMkhScQWNHE6HHaIeFBvwHwFxGaf193rmjoyrS9xruYV_af_fkpAvm6rXoBt41ZUCHB7mUVpju4pJJhxgKc97oqD8p1PJfjuXrY36zjMvTjjLzD5ISgxwX6Yp9SYy6_CDExKDkSsC9SjHXuifEJxvA650'
+        const token = process.env.PROPERTY_API_TOKEN;
+        // 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1MWNtbGF6ZDhnd3MyZGdpc2dzY2t0OHYzbHMxb2ZlZSIsImlzcyI6ImRhdGFmaW5pdGkuY28ifQ.fZsTRRMIdaEKLVauyq4iARGngcbUYW2OAYMgb8eOPQbE1SOpcEKyQca5BntWlSJrbndwkX_cwpwdrGcwWBao4y5q8XVi-BTOG3TIvxTo5Rh3jSyHVJXyemlKObMqdf4PR4LmI4Chh1FevAapA_YLJRvgwZXzJnTzM7VUvMYCd5xPV0ywnz8OhKnKJt3L6LErfQTb9bfPBmyNzpWwq6OyL6FxwCO2WIvK7nZdZIzebWDt-26E3loy0RT8hwZcK1xnO27-eouQwPW3fWqDuyB-q-TUtXIt8ZO3FRZjHSTvgfwr8NrEsp44_mMk8nmEDSbj4SWAHH1PPXeselwjzk2LzCT3uABJamRnK7TRVSvGAM5CCk0QfkFKC8CROx-bNRIJtN2UQwd1iOE-RjfxgT_dkTgzwq1obFWx0Aub29xoKWt2T3vOOab-cxHcc6ZfIumpSd3SWtzqiM4lcRBdtvXVr6R61BCs-f8nnCF-iBKFRouz0oc8vYaWnq0fug6mycZSYjIfLHmmMs27kTKyeaCGp0knm0uMxcz3xP1jMBw0Kq7j1-gBj3hpLan0cwnpNnP1UewUYimBLP-TqCTeupPtRXqXKK88l4nGsi9SQehqgJsh3F_eN4nbUv7kGtQ27R5LYCnPEQ9vpq-sxt2dgThSLlTaoewNj2Wr0sy9Conj7UA'
         const data = {
             "query": query,
-            "num_records": 10
+            "num_records": 5
         }
         const config = {
             headers: {
@@ -221,10 +221,72 @@ module.exports = async function (context, req) {
         }
     }
 
-    // entry of the API
+    async function GetPeopleDetails(fname, lname, email) {
+        context.log("Inside GetPeopleDetails function");
+        var query = '';
+        if (fname) {
+            query = `firstName:\"${fname}\" OR `;
+            if (fname && lname) {
+                query += `lastName:\"${lname}\"  OR `
+            }
+            if (fname && email) {
+                query += ` AND emails:\"${email}\"`
+            }
+        }
+        context.log(query);
+
+        const token = process.env.PROPERTY_API_TOKEN;
+        // const token = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1MWNtbGF6ZDhnd3MyZGdpc2dzY2t0OHYzbHMxb2ZlZSIsImlzcyI6ImRhdGFmaW5pdGkuY28ifQ.fZsTRRMIdaEKLVauyq4iARGngcbUYW2OAYMgb8eOPQbE1SOpcEKyQca5BntWlSJrbndwkX_cwpwdrGcwWBao4y5q8XVi-BTOG3TIvxTo5Rh3jSyHVJXyemlKObMqdf4PR4LmI4Chh1FevAapA_YLJRvgwZXzJnTzM7VUvMYCd5xPV0ywnz8OhKnKJt3L6LErfQTb9bfPBmyNzpWwq6OyL6FxwCO2WIvK7nZdZIzebWDt-26E3loy0RT8hwZcK1xnO27-eouQwPW3fWqDuyB-q-TUtXIt8ZO3FRZjHSTvgfwr8NrEsp44_mMk8nmEDSbj4SWAHH1PPXeselwjzk2LzCT3uABJamRnK7TRVSvGAM5CCk0QfkFKC8CROx-bNRIJtN2UQwd1iOE-RjfxgT_dkTgzwq1obFWx0Aub29xoKWt2T3vOOab-cxHcc6ZfIumpSd3SWtzqiM4lcRBdtvXVr6R61BCs-f8nnCF-iBKFRouz0oc8vYaWnq0fug6mycZSYjIfLHmmMs27kTKyeaCGp0knm0uMxcz3xP1jMBw0Kq7j1-gBj3hpLan0cwnpNnP1UewUYimBLP-TqCTeupPtRXqXKK88l4nGsi9SQehqgJsh3F_eN4nbUv7kGtQ27R5LYCnPEQ9vpq-sxt2dgThSLlTaoewNj2Wr0sy9Conj7UA'
+        const data = {
+            "query": query,
+            "num_records": 5
+        }
+        const config = {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        };
+        try {
+            const responsePropertyDetails = await axios.post('https://api.datafiniti.co/v4/people/search', data, config);
+            context.log({ responsePropertyDetails: responsePropertyDetails.data });
+            return responsePropertyDetails.data.records;
+        } catch (error) {
+            // Handle the error appropriately
+            if (error.response) {
+                // The request was made and the server responded with a status code that falls out of the range of 2xx
+                context.log('Server Error:', error.response.data);
+                context.log('Status:', error.response.status);
+                context.log('Headers:', error.response.headers);
+            } else if (error.request) {
+                // The request was made but no response was received
+                context.log('No response received:', error.request);
+            } else {
+                // Something happened in setting up the request that triggered the error
+                context.log('Error setting up the request:', error.message);
+            }
+            // Return an appropriate error message or handle the error condition as needed
+            return 'An error occurred while fetching property details';
+        }
+    }
+
+    async function GetqueryResponse(query){
+        const config = {
+            headers: {
+                'Ocp-Apim-Subscription-Key': `4ce55ccdea3540aa8356e3e75e8f50dc`,//TODO take from env 
+                'Content-Type': 'application/json'
+            }
+        };
+        const response = await axios.get(`https://api.bing.microsoft.com/v7.0/search?responseFilter=Webpages&q=${query}`, config);
+        context.log({ responseGetqueryResponse: response.data.webPages.value });
+            return response.data.webPages.value;
+    }
+
+    // ===================================================Entry of the API======================================================================================//
+
     if (req.method == 'POST') {
-        const { cusip, Forexticker, days, startdate, enddate, Indexticker, address, city, country, postal } = req.body;
-        context.log({ cusip, Forexticker, days, startdate, enddate, Indexticker, address, city, country, postal })
+        const { cusip, Forexticker, days, startdate, enddate, Indexticker, address, city, country, postal, fname, lname, email, query} = req.body;
+        context.log({ cusip, Forexticker, days, startdate, enddate, Indexticker, address, city, country, postal, fname, lname, email, query })
         if (cusip) {
             const OpenfigiResponse = await GetOpenFigiResponse(cusip);
             const getType = OpenfigiResponse[0]?.data[0]?.marketSector;
@@ -287,10 +349,42 @@ module.exports = async function (context, req) {
         if (address) {
             try {
                 const PropertyDetails = await GetPropertyDetails(address, city, country, postal);
-                context.log({PropertyDetails})
+                context.log({ PropertyDetails })
                 context.res = {
                     // status: 200, /* Defaults to 200 */
                     body: { PropertyDetails }
+                };
+            } catch (err) {
+                context.res = {
+                    // status: 200, /* Defaults to 200 */
+                    body: { res: null }
+                };
+            }
+        }
+        if (fname) {
+            try {
+                context.log("Inside Fname con")
+                const PeopleDetails = await GetPeopleDetails(fname, lname, email);
+                context.log({ PeopleDetails })
+                context.res = {
+                    // status: 200, /* Defaults to 200 */
+                    body: { PeopleDetails }
+                };
+            } catch (err) {
+                context.res = {
+                    // status: 200, /* Defaults to 200 */
+                    body: { res: null }
+                };
+            }
+        }
+        if(query){
+            try {
+                context.log("Inside query Condition")
+                const queryResponse = await GetqueryResponse(query);
+                context.log({ queryResponse })
+                context.res = {
+                    // status: 200, /* Defaults to 200 */
+                    body: { queryResponse }
                 };
             } catch (err) {
                 context.res = {
